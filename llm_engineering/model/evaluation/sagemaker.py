@@ -16,7 +16,7 @@ evaluation_requirements_path = evaluation_dir / "requirements.txt"
 
 def run_evaluation_on_sagemaker(is_dummy: bool = True) -> None:
     assert settings.HUGGINGFACE_ACCESS_TOKEN, "Hugging Face access token is required."
-    assert settings.OPENAI_API_KEY, "OpenAI API key is required."
+    assert settings.GEMINI_API_KEY, "Gemini API key is required."
     assert settings.AWS_ARN_ROLE, "AWS ARN role is required."
 
     if not evaluation_dir.exists():
@@ -31,7 +31,8 @@ def run_evaluation_on_sagemaker(is_dummy: bool = True) -> None:
 
     env = {
         "HUGGING_FACE_HUB_TOKEN": settings.HUGGINGFACE_ACCESS_TOKEN,
-        "OPENAI_API_KEY": settings.OPENAI_API_KEY,
+        "GEMINI_API_KEY": settings.GEMINI_API_KEY,
+        "GEMINI_MODEL_ID": settings.GEMINI_MODEL_ID,
         "DATASET_HUGGINGFACE_WORKSPACE": huggingface_user,
         "MODEL_HUGGINGFACE_WORKSPACE": huggingface_user,
     }

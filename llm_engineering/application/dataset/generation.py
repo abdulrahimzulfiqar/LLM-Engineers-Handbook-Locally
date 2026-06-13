@@ -22,7 +22,7 @@ from .output_parsers import ListPydanticOutputParser
 
 
 class DatasetGenerator(ABC):
-    tokenizer = tiktoken.encoding_for_model(settings.OPENAI_MODEL_ID)
+    tokenizer = tiktoken.get_encoding("cl100k_base")
     dataset_type: DatasetType | None = None
 
     system_prompt_template = """You are a helpful assistant who generates {dataset_format} based on the given context. \
@@ -75,8 +75,8 @@ Provide your response in JSON format.
         }
         prompt = prompt_template.format(**input_variables)
         prompt_tokens = cls.tokenizer.encode(prompt)
-        if len(prompt_tokens) > settings.OPENAI_MAX_TOKEN_WINDOW:
-            prompt_tokens = prompt_tokens[: settings.OPENAI_MAX_TOKEN_WINDOW]
+        if len(prompt_tokens) > settings.GEMINI_MAX_TOKEN_WINDOW:
+            prompt_tokens = prompt_tokens[: settings.GEMINI_MAX_TOKEN_WINDOW]
             prompt = cls.tokenizer.decode(prompt_tokens)
 
         prompt = GenerateDatasetSamplesPrompt(
@@ -112,11 +112,12 @@ Provide your response in JSON format.
         if mock:
             llm = FakeListLLM(responses=[constants.get_mocked_response(cls.dataset_type)])
         else:
-            assert settings.OPENAI_API_KEY is not None, "OpenAI API key must be set to generate datasets"
+            assert settings.GEMINI_API_KEY is not None, "Gemini API key must be set to generate datasets"
 
             llm = ChatOpenAI(
-                model=settings.OPENAI_MODEL_ID,
-                api_key=settings.OPENAI_API_KEY,
+                model=settings.GEMINI_MODEL_ID,
+                api_key=settings.GEMINI_API_KEY,
+                base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
                 max_tokens=2000 if cls.dataset_type == DatasetType.PREFERENCE else 1200,
                 temperature=0.7,
             )

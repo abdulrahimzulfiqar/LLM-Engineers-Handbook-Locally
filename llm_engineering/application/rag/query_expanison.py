@@ -19,7 +19,12 @@ class QueryExpansion(RAGStep):
 
         query_expansion_template = QueryExpansionTemplate()
         prompt = query_expansion_template.create_template(expand_to_n - 1)
-        model = ChatOpenAI(model=settings.OPENAI_MODEL_ID, api_key=settings.OPENAI_API_KEY, temperature=0)
+        model = ChatOpenAI(
+            model=settings.GEMINI_MODEL_ID,
+            api_key=settings.GEMINI_API_KEY,
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            temperature=0,
+        )
 
         chain = prompt | model
 

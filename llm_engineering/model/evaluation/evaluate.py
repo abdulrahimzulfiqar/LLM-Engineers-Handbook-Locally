@@ -4,15 +4,33 @@ import json
 import os
 
 from datasets import Dataset, load_dataset
+from dotenv import load_dotenv
 from huggingface_hub import HfApi
 from huggingface_hub.utils import RepositoryNotFoundError
 from openai import OpenAI
 from tqdm.auto import tqdm
 from vllm import LLM, SamplingParams
 
-OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
-DATASET_HUGGINGFACE_WORKSPACE = os.environ["DATASET_HUGGINGFACE_WORKSPACE"]
-MODEL_HUGGINGFACE_WORKSPACE = os.environ["MODEL_HUGGINGFACE_WORKSPACE"]
+# Load environment variables from .env file
+load_dotenv()
+
+# Ensure Hugging Face library has the access token
+if "HUGGINGFACE_ACCESS_TOKEN" in os.environ and "HF_TOKEN" not in os.environ:
+    os.environ["HF_TOKEN"] = os.environ["HUGGINGFACE_ACCESS_TOKEN"]
+
+# Resolve default HF username if HF_TOKEN is available
+default_workspace = "mlabonne"
+hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_ACCESS_TOKEN")
+if hf_token:
+    try:
+        default_workspace = HfApi().whoami(token=hf_token)["name"]
+    except Exception:
+        pass
+
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+GEMINI_MODEL_ID = os.environ.get("GEMINI_MODEL_ID", "gemini-2.5-flash")
+DATASET_HUGGINGFACE_WORKSPACE = os.environ.get("DATASET_HUGGINGFACE_WORKSPACE", default_workspace)
+MODEL_HUGGINGFACE_WORKSPACE = os.environ.get("MODEL_HUGGINGFACE_WORKSPACE", default_workspace)
 IS_DUMMY = os.environ.get("IS_DUMMY", False)
 
 print("====== EVAL PARAMETERS ======")  # noqa
@@ -88,7 +106,7 @@ Provide your evaluation in JSON format with the following structure:
 """
 
     completion = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=GEMINI_MODEL_ID,
         messages=[
             {
                 "role": "system",
@@ -106,7 +124,10 @@ Provide your evaluation in JSON format with the following structure:
 
 
 def evaluate_batch(batch, start_index):
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    client = OpenAI(
+        api_key=GEMINI_API_KEY,
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+    )
     return [(i, evaluate_answer(instr, ans, client)) for i, (instr, ans) in enumerate(batch, start=start_index)]
 
 

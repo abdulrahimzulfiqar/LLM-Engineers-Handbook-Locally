@@ -247,15 +247,15 @@ cp .env.example .env # The file must be at your repository's root!
 
 2. Now, let's understand how to fill in all the essential variables within the `.env` file to get you started. The following are the mandatory settings we must complete when working locally:
 
-#### OpenAI
+#### Gemini
 
-To authenticate to OpenAI's API, you must fill out the `OPENAI_API_KEY` env var with an authentication token.
+To authenticate to Gemini's API, you must fill out the `GEMINI_API_KEY` env var with an authentication token.
 
 ```env
-OPENAI_API_KEY=your_api_key_here
+GEMINI_API_KEY=your_api_key_here
 ```
 
-→ Check out this [tutorial](https://platform.openai.com/docs/quickstart) to learn how to provide one from OpenAI.
+→ Check out this [tutorial](https://ai.google.dev/gemini-api/docs/api-key) to learn how to get a Gemini API key.
 
 #### Hugging Face
 
@@ -390,7 +390,7 @@ Default credentials:
 You can search your MongoDB collections using your **IDEs MongoDB plugin** (which you have to install separately), where you have to use the database URI to connect to the MongoDB database hosted within the Docker container: `mongodb://llm_engineering:llm_engineering@127.0.0.1:27017`
 
 > [!IMPORTANT]
-> Everything related to training or running the LLMs (e.g., training, evaluation, inference) can only be run if you set up AWS SageMaker, as explained in the next section on cloud infrastructure.
+> While training and evaluation can be run locally using Unsloth and Gemini (see [Running project](#-run-project)), running cloud-scale training, SageMaker deployments, and AWS SageMaker endpoints requires setting up the AWS SageMaker cloud infrastructure.
 
 ### Cloud infrastructure (for production)
 
@@ -477,7 +477,7 @@ You can visualize the results on their self-hosted dashboards if you create a Co
 
 ### 💰 Running the Project Costs
 
-We will mostly stick to free tiers for all the services except for AWS and OpenAI's API, which are both pay-as-you-go services. The cost of running the project once, with our default values, will be roughly ~$25 (most of it comes from using AWS SageMaker for training and inference).
+We will mostly stick to free tiers for all the services except for AWS and Gemini's API, which are both pay-as-you-go services. The cost of running the project once, with our default values, will be roughly ~$25 (most of it comes from using AWS SageMaker for training and inference).
 
 ## ⚡ Pipelines
 
@@ -634,14 +634,58 @@ Based on the setup and usage steps described above, assuming the local and cloud
 
 ### Training
 
+You can perform the fine-tuning process either **locally on your machine** (using Unsloth for high efficiency) or **on AWS SageMaker** (cloud scale).
+
+#### Option A: Fine-Tuning Locally (Recommended)
+
+Local fine-tuning uses **Unsloth** for fast and memory-efficient training.
+
+1. **Configure Environment Variables**:
+   Ensure you have configured the `.env` file at the root of the project with:
+   - `HUGGINGFACE_ACCESS_TOKEN`: Your Hugging Face token (needs read/write permissions to load datasets and push the fine-tuned model).
+   - `COMET_API_KEY`: Your Comet ML/Opik token for logging and experiment tracking.
+   - `GEMINI_API_KEY`: Your Gemini API key.
+   - `GEMINI_MODEL_ID=gemini-2.5-flash`: The evaluator model for pipeline evaluations.
+
+2. **Run SFT (Supervised Fine-Tuning) Locally**:
+   Run the following command to start SFT training on your local GPU:
+   ```bash
+   poetry poe run-training-local --finetuning_type sft --is_dummy True
+   ```
+   *(Note: Set `--is_dummy False` to run training on the full dataset).*
+
+3. **Run DPO (Direct Preference Optimization) Locally**:
+   Run the following command to start DPO alignment on your local GPU:
+   ```bash
+   poetry poe run-training-local --finetuning_type dpo --is_dummy True
+   ```
+
+4. **Evaluate Fine-Tuned Models Locally**:
+   Run the following command to execute evaluation locally (uses Gemini 2.5 Flash as specified in `.env`):
+   ```bash
+   poetry poe run-evaluation-local
+   ```
+
+#### Option B: Fine-Tuning on AWS SageMaker
+
 > [!IMPORTANT]
-> From now on, for these steps to work, you need to properly set up AWS SageMaker, such as running `poetry install --with aws` and filling in the AWS-related environment variables and configs.
+> For AWS SageMaker steps to work, you must properly configure your AWS CLI and set the SageMaker role/execution role environment variables in your `.env`.
 
-5. SFT fine-tuning Llamma 3.1: `poetry poe run-training-pipeline`
+1. **SFT Fine-Tuning on SageMaker**:
+   ```bash
+   poetry poe run-training-pipeline
+   ```
 
-6. For DPO, go to `configs/training.yaml`, change `finetuning_type` to `dpo`, and run `poetry poe run-training-pipeline` again
+2. **DPO Fine-Tuning on SageMaker**:
+   Go to `configs/training.yaml`, change `finetuning_type` to `dpo`, and run:
+   ```bash
+   poetry poe run-training-pipeline
+   ```
 
-7. Evaluate fine-tuned models: `poetry poe run-evaluation-pipeline`
+3. **Evaluate Fine-Tuned Models on SageMaker**:
+   ```bash
+   poetry poe run-evaluation-pipeline
+   ```
 
 ### Inference
 

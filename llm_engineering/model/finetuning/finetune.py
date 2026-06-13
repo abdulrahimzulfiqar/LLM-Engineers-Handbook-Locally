@@ -2,7 +2,16 @@ import argparse
 import os
 from pathlib import Path
 
-from unsloth import PatchDPOTrainer
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Ensure Hugging Face library has the access token
+if "HUGGINGFACE_ACCESS_TOKEN" in os.environ and "HF_TOKEN" not in os.environ:
+    os.environ["HF_TOKEN"] = os.environ["HUGGINGFACE_ACCESS_TOKEN"]
+
+from unsloth import PatchDPOTrainer  # noqa: E402
 
 PatchDPOTrainer()
 
@@ -238,13 +247,24 @@ def check_if_huggingface_model_exists(model_id: str, default_value: str = "mlabo
 
 
 if __name__ == "__main__":
+    # Resolve default HF username if HF_TOKEN is available
+    default_workspace = "mlabonne"
+    hf_token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_ACCESS_TOKEN")
+    if hf_token:
+        try:
+            from huggingface_hub import HfApi
+
+            default_workspace = HfApi().whoami(token=hf_token)["name"]
+        except Exception:
+            pass
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--num_train_epochs", type=int, default=3)
     parser.add_argument("--per_device_train_batch_size", type=int, default=2)
     parser.add_argument("--learning_rate", type=float, default=3e-4)
-    parser.add_argument("--dataset_huggingface_workspace", type=str, default="mlabonne")
-    parser.add_argument("--model_output_huggingface_workspace", type=str, default="mlabonne")
+    parser.add_argument("--dataset_huggingface_workspace", type=str, default=default_workspace)
+    parser.add_argument("--model_output_huggingface_workspace", type=str, default=default_workspace)
     parser.add_argument("--is_dummy", type=bool, default=False, help="Flag to reduce the dataset size for testing")
     parser.add_argument(
         "--finetuning_type",
@@ -254,9 +274,9 @@ if __name__ == "__main__":
         help="Parameter to choose the finetuning stage.",
     )
 
-    parser.add_argument("--output_data_dir", type=str, default=os.environ["SM_OUTPUT_DATA_DIR"])
-    parser.add_argument("--model_dir", type=str, default=os.environ["SM_MODEL_DIR"])
-    parser.add_argument("--n_gpus", type=str, default=os.environ["SM_NUM_GPUS"])
+    parser.add_argument("--output_data_dir", type=str, default=os.environ.get("SM_OUTPUT_DATA_DIR", "./output_data"))
+    parser.add_argument("--model_dir", type=str, default=os.environ.get("SM_MODEL_DIR", "./model_output"))
+    parser.add_argument("--n_gpus", type=str, default=os.environ.get("SM_NUM_GPUS", "1"))
 
     args = parser.parse_args()
 

@@ -9,9 +9,9 @@ class Settings(BaseSettings):
 
     # --- Required settings even when working locally. ---
 
-    # OpenAI API
-    OPENAI_MODEL_ID: str = "gpt-4o-mini"
-    OPENAI_API_KEY: str | None = None
+    # Gemini API Config
+    GEMINI_MODEL_ID: str = "gemini-1.5-flash"
+    GEMINI_API_KEY: str | None = None
 
     # Huggingface API
     HUGGINGFACE_ACCESS_TOKEN: str | None = None
@@ -69,13 +69,12 @@ class Settings(BaseSettings):
     LINKEDIN_PASSWORD: str | None = None
 
     @property
-    def OPENAI_MAX_TOKEN_WINDOW(self) -> int:
+    def GEMINI_MAX_TOKEN_WINDOW(self) -> int:
         official_max_token_window = {
-            "gpt-3.5-turbo": 16385,
-            "gpt-4-turbo": 128000,
-            "gpt-4o": 128000,
-            "gpt-4o-mini": 128000,
-        }.get(self.OPENAI_MODEL_ID, 128000)
+            "gemini-1.5-flash": 1048576,
+            "gemini-1.5-pro": 2097152,
+            "gemini-2.5-flash": 1048576,
+        }.get(self.GEMINI_MODEL_ID, 1048576)
 
         max_token_window = int(official_max_token_window * 0.90)
 
