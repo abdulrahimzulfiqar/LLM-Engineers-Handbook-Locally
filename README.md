@@ -277,53 +277,6 @@ COMET_API_KEY=your_api_key_here
 
 → Check out this [tutorial](https://www.comet.com/docs/opik/?utm_source=llm_handbook&utm_medium=github&utm_campaign=opik) to learn how to get started with Opik. You can also access Opik's dashboard using 🔗[this link](https://www.comet.com/opik?utm_source=llm_handbook&utm_medium=github&utm_content=opik).
 
-### 6. Deployment Setup
-
-When deploying the project to the cloud, we must set additional settings for Mongo, Qdrant, and AWS. If you are just working locally, the default values of these env vars will work out of the box. Detailed deployment instructions are available in Chapter 11 of the [LLM Engineer's Handbook](https://www.amazon.com/LLM-Engineers-Handbook-engineering-production/dp/1836200072/).
-
-#### MongoDB
-
-We must change the `DATABASE_HOST` env var with the URL pointing to your cloud MongoDB cluster.
-
-```env
-DATABASE_HOST=your_mongodb_url
-```
-
-→ Check out this [tutorial](https://www.mongodb.com/resources/products/fundamentals/mongodb-cluster-setup) to learn how to create and host a MongoDB cluster for free.
-
-#### Qdrant
-
-Change `USE_QDRANT_CLOUD` to `true`, `QDRANT_CLOUD_URL` with the URL point to your cloud Qdrant cluster, and `QDRANT_APIKEY` with its API key.
-
-```env
-USE_QDRANT_CLOUD=true
-QDRANT_CLOUD_URL=your_qdrant_cloud_url
-QDRANT_APIKEY=your_qdrant_api_key
-```
-
-→ Check out this [tutorial](https://qdrant.tech/documentation/cloud/create-cluster/) to learn how to create a Qdrant cluster for free
-
-#### AWS
-
-For your AWS set-up to work correctly, you need the AWS CLI installed on your local machine and properly configured with an admin user (or a user with enough permissions to create new SageMaker, ECR, and S3 resources; using an admin user will make everything more straightforward).
-
-Chapter 2 provides step-by-step instructions on how to install the AWS CLI, create an admin user on AWS, and get an access key to set up the `AWS_ACCESS_KEY` and `AWS_SECRET_KEY` environment variables. If you already have an AWS admin user in place, you have to configure the following env vars in your `.env` file:
-
-```bash
-AWS_REGION=eu-central-1 # Change it with your AWS region.
-AWS_ACCESS_KEY=your_aws_access_key
-AWS_SECRET_KEY=your_aws_secret_key
-```
-
-AWS credentials are typically stored in `~/.aws/credentials`. You can view this file directly using `cat` or similar commands:
-
-```bash
-cat ~/.aws/credentials
-```
-
-> [!IMPORTANT]
-> Additional configuration options are available in [settings.py](https://github.com/PacktPublishing/LLM-Engineers-Handbook/blob/main/llm_engineering/settings.py). Any variable in the `Settings` class can be configured through the `.env` file. 
-
 ## 🏗️ Infrastructure
 
 ### Local infrastructure (for testing and development)
