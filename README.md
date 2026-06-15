@@ -342,95 +342,7 @@ Default credentials:
 
 You can search your MongoDB collections using your **IDEs MongoDB plugin** (which you have to install separately), where you have to use the database URI to connect to the MongoDB database hosted within the Docker container: `mongodb://llm_engineering:llm_engineering@127.0.0.1:27017`
 
-> [!IMPORTANT]
-> While training and evaluation can be run locally using Unsloth and Gemini (see [Running project](#-run-project)), running cloud-scale training, SageMaker deployments, and AWS SageMaker endpoints requires setting up the AWS SageMaker cloud infrastructure.
 
-### Cloud infrastructure (for production)
-
-Here we will quickly present how to deploy the project to AWS and other serverless services. We won't go into the details (as everything is presented in the book) but only point out the main steps you have to go through.
-
-First, reinstall your Python dependencies with the AWS group:
-```bash
-poetry install --with aws
-```
-
-#### AWS SageMaker
-
-> [!NOTE]
-> Chapter 10 provides step-by-step instructions in the section "Implementing the LLM microservice using AWS SageMaker".
-
-By this point, we expect you to have AWS CLI installed and your AWS CLI and project's env vars (within the `.env` file) properly configured with an AWS admin user.
-
-To ensure best practices, we must create a new AWS user restricted to creating and deleting only resources related to AWS SageMaker. Create it by running:
-```bash
-poetry poe create-sagemaker-role
-```
-It will create a `sagemaker_user_credentials.json` file at the root of your repository with your new `AWS_ACCESS_KEY` and `AWS_SECRET_KEY` values. **But before replacing your new AWS credentials, also run the following command to create the execution role (to create it using your admin credentials).**
-
-To create the IAM execution role used by AWS SageMaker to access other AWS resources on our behalf, run the following:
-```bash
-poetry poe create-sagemaker-execution-role
-```
-It will create a `sagemaker_execution_role.json` file at the root of your repository with your new `AWS_ARN_ROLE` value. Add it to your `.env` file. 
-
-Once you've updated the `AWS_ACCESS_KEY`, `AWS_SECRET_KEY`, and `AWS_ARN_ROLE` values in your `.env` file, you can use AWS SageMaker. **Note that this step is crucial to complete the AWS setup.**
-
-#### Training
-
-We start the training pipeline through ZenML by running the following:
-```bash
-poetry poe run-training-pipeline
-```
-This will start the training code using the configs from `configs/training.yaml` directly in SageMaker. You can visualize the results in Comet ML's dashboard.
-
-We start the evaluation pipeline through ZenML by running the following:
-```bash
-poetry poe run-evaluation-pipeline
-```
-This will start the evaluation code using the configs from `configs/evaluating.yaml` directly in SageMaker. You can visualize the results in `*-results` datasets saved to your Hugging Face profile.
-
-#### Inference
-
-To create an AWS SageMaker Inference Endpoint, run:
-```bash
-poetry poe deploy-inference-endpoint
-```
-To test it out, run:
-```bash
-poetry poe test-sagemaker-endpoint
-```
-To delete it, run:
-```bash
-poetry poe delete-inference-endpoint
-```
-
-#### AWS: ML pipelines, artifacts, and containers
-
-The ML pipelines, artifacts, and containers are deployed to AWS by leveraging ZenML's deployment features. Thus, you must create an account with ZenML Cloud and follow their guide on deploying a ZenML stack to AWS. Otherwise, we provide step-by-step instructions in **Chapter 11**, section **Deploying the LLM Twin's pipelines to the cloud** on what you must do.  
-
-#### Qdrant & MongoDB
-
-We leverage Qdrant's and MongoDB's serverless options when deploying the project. Thus, you can either follow [Qdrant's](https://qdrant.tech/documentation/cloud/create-cluster/) and [MongoDB's](https://www.mongodb.com/resources/products/fundamentals/mongodb-cluster-setup) tutorials on how to create a freemium cluster for each or go through **Chapter 11**, section **Deploying the LLM Twin's pipelines to the cloud** and follow our step-by-step instructions.
-
-#### GitHub Actions
-
-We use GitHub Actions to implement our CI/CD pipelines. To implement your own, you have to fork our repository and set the following env vars as Actions secrets in your forked repository:
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
-- `AWS_ECR_NAME`
-- `AWS_REGION`
-
-Also, we provide instructions on how to set everything up in **Chapter 11**, section **Adding LLMOps to the LLM Twin**.
-
-#### Comet ML & Opik
-
-You can visualize the results on their self-hosted dashboards if you create a Comet account and correctly set the `COMET_API_KEY` env var. As Opik is powered by Comet, you don't have to set up anything else along Comet:
-- [Comet ML (for experiment tracking)](https://www.comet.com/?utm_source=llm_handbook&utm_medium=github&utm_campaign=opik)
-- [Opik (for prompt monitoring)](https://www.comet.com/opik?utm_source=llm_handbook&utm_medium=github&utm_campaign=opik)
-
-### 💰 Running the Project Costs
-
-We will mostly stick to free tiers for all the services except for AWS and Gemini's API, which are both pay-as-you-go services. The cost of running the project once, with our default values, will be roughly ~$25 (most of it comes from using AWS SageMaker for training and inference).
 
 ## ⚡ Pipelines
 
@@ -587,10 +499,6 @@ Based on the setup and usage steps described above, assuming the local and cloud
 
 ### Training
 
-You can perform the fine-tuning process either **locally on your machine** (using Unsloth for high efficiency) or **on AWS SageMaker** (cloud scale).
-
-#### Option A: Fine-Tuning Locally (Recommended)
-
 Local fine-tuning uses **Unsloth** for fast and memory-efficient training.
 
 1. **Configure Environment Variables**:
@@ -619,41 +527,24 @@ Local fine-tuning uses **Unsloth** for fast and memory-efficient training.
    poetry poe run-evaluation-local
    ```
 
-#### Option B: Fine-Tuning on AWS SageMaker
-
-> [!IMPORTANT]
-> For AWS SageMaker steps to work, you must properly configure your AWS CLI and set the SageMaker role/execution role environment variables in your `.env`.
-
-1. **SFT Fine-Tuning on SageMaker**:
-   ```bash
-   poetry poe run-training-pipeline
-   ```
-
-2. **DPO Fine-Tuning on SageMaker**:
-   Go to `configs/training.yaml`, change `finetuning_type` to `dpo`, and run:
-   ```bash
-   poetry poe run-training-pipeline
-   ```
-
-3. **Evaluate Fine-Tuned Models on SageMaker**:
-   ```bash
-   poetry poe run-evaluation-pipeline
-   ```
-
 ### Inference
 
-> [!IMPORTANT]
-> From now on, for these steps to work, you need to properly set up AWS SageMaker, such as running `poetry install --with aws` and filling in the AWS-related environment variables and configs.
+You can run the RAG retrieval and inference servers locally:
 
-8. Call only the RAG retrieval module: `poetry poe call-rag-retrieval-module`
+1. **Call only the RAG retrieval module**:
+   ```bash
+   poetry poe call-rag-retrieval-module
+   ```
 
-9. Deploy the LLM Twin microservice to SageMaker: `poetry poe deploy-inference-endpoint`
+2. **Start the end-to-end RAG server**:
+   ```bash
+   poetry poe run-inference-ml-service
+   ```
 
-10. Test the LLM Twin microservice: `poetry poe test-sagemaker-endpoint`
-
-11. Start end-to-end RAG server: `poetry poe run-inference-ml-service`
-
-12. Test RAG server: `poetry poe call-inference-ml-service`
+3. **Test the RAG server**:
+   ```bash
+   poetry poe call-inference-ml-service
+   ```
 
 ## 📄 License
 
